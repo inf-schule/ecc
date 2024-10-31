@@ -117,6 +117,7 @@
         this.bInput = $( "input[name='b']" );
         this.plotContainer = $( "#plot" );
         this.equationContainer = $( ".curve-equation" );
+        this.singularityContainer = $( ".curve-singularity" );
         this.singularWarning = $( ".curve-singular-warning" );
 
         this.marginFactor = 1 / 8;
@@ -365,6 +366,9 @@
                                      "<em>x</em><sup>3</sup> " +
                                      getTerm( this.a, "<em>x</em>" ) +
                                      getTerm( this.b, "" ) );
+
+        this.singularityContainer.html( "<em>4a</em><sup>3</sup> + <em>27b</em><sup>2</sup> = " +
+                                     parseInt( 4*this.a*this.a*this.a + 27*this.b*this.b ) );
 
         this.singularWarning.css( "display",
                                   this.singular ? "block" : "none" );
@@ -733,6 +737,130 @@
             ( 4 * this.a * this.a * this.a + 27 * this.b * this.b ) === 0;
         this.stationaryPoints = this.getStationaryPoints();
         $.ec.Base.prototype.recalculate.call( this );
+    };
+
+///////////////////////////////////////////////////////////////////////////
+    // $.ec.reals.PointExplore
+
+    $.ec.reals.PointExplore = function() {
+        $.ec.reals.Base.call( this );
+
+        this.pxInput = $( "input[name='px']" );
+        this.pyInput = $( "input[name='py']" );
+        this.qxInput = $( "input[name='qx']" );
+        this.qyInput = $( "input[name='qy']" );
+        this.rxInput = $( "input[name='rx']" );
+        this.ryInput = $( "input[name='ry']" );
+
+        this.pxInput.data( "prev", this.pxInput.val() );
+        this.pyInput.data( "prev", this.pyInput.val() );
+        this.qxInput.data( "prev", this.qxInput.val() );
+        this.qyInput.data( "prev", this.qyInput.val() );
+
+        this.pLabel = this.makeLabel( "P", colors.yellow );
+        //this.qLabel = this.makeLabel( "Q", colors.yellow );
+        //this.rLabel = this.makeLabel( "R", colors.red );
+
+        var curve = this;
+        $().add( this.pxInput )
+           .add( this.pyInput )
+           .add( this.qxInput )
+           .add( this.qyInput )
+           .change(function() { curve.update(); });
+    };
+
+    $.ec.reals.PointExplore.prototype =
+        Object.create( $.ec.reals.Base.prototype );
+    $.ec.reals.PointExplore.prototype.constructor =
+        $.ec.reals.PointExplore;
+
+    $.ec.reals.PointExplore.prototype.getPlotRange = function( points ) {
+        if( typeof points === "undefined" ) {
+            points = [];
+        }
+        else {
+            points = points.slice( 0 );
+        }
+
+        points.push( this.p );
+        /*
+        points.push( this.q );
+
+        if( this.r !== null ) {
+            points.push( this.r );
+            points.push([ this.r[ 0 ], -this.r[ 1 ] ]);
+        }
+        */
+        return $.ec.reals.Base.prototype.getPlotRange.call( this, points );
+    };
+
+    $.ec.reals.PointExplore.prototype.getPlotData = function() {
+        var data = $.ec.reals.Base.prototype.getPlotData.call( this );
+        //var linePoints = this.getLinePoints( this.p, this.q );
+        /*
+        if( this.r !== null ) {
+            data.push({
+                color: colors.red,
+                data: [ this.r,
+                        [ this.r[ 0 ], -this.r[ 1 ] ] ],
+                lines: { show: true }
+            });
+            data.push({
+                color: colors.red,
+                data: [ this.r ],
+                points: { show: true, radius: 5 },
+            });
+        }
+        */
+        /*
+        data.push({
+            color: "#edc240",
+            data: linePoints,
+            lines: { show: true }
+        });
+        */
+        data.push({
+            color: colors.yellow,
+            //data: [ this.p, this.q ],
+            data: [ this.p ],
+            points: { show: true, radius: 5 }
+        });
+
+        return data;
+    };
+
+    $.ec.reals.PointExplore.prototype.getInputValues = function() {
+        $.ec.reals.Base.prototype.getInputValues.call( this );
+        this.p = this.fixPointCoordinate( this.pxInput, this.pyInput );
+        this.q = this.fixPointCoordinate( this.qxInput, this.qyInput );
+    };
+
+    $.ec.reals.PointExplore.prototype.recalculate = function() {
+        //this.r = this.addPoints( this.p, this.q );
+        this.r = this.addPoints( this.p, this.p );
+        $.ec.reals.Base.prototype.recalculate.call( this );
+    };
+
+    $.ec.reals.PointExplore.prototype.redraw = function() {
+        $.ec.reals.Base.prototype.redraw.call( this );
+        this.setLabel( this.pLabel, this.p );
+        //this.setLabel( this.qLabel, this.q );
+        //this.setLabel( this.rLabel, this.r );
+    };
+
+    $.ec.reals.PointExplore.prototype.updateResults = function() {
+        
+        $.ec.reals.Base.prototype.updateResults.call( this );
+
+        if( this.r !== null ) {
+            this.rxInput.val( round10( this.r[ 0 ] ) );
+            this.ryInput.val( round10( this.r[ 1 ] ) );
+        }
+        else {
+            this.rxInput.val( "Inf" );
+            this.ryInput.val( "Inf" );
+        }
+        
     };
 
     ///////////////////////////////////////////////////////////////////////////
@@ -1365,6 +1493,106 @@
                                     this.prime ? "none" : "block" });
         this.fieldOrder.text( this.k );
         this.curveOrder.text( this.curvePoints.length + 1 );
+    };
+
+///////////////////////////////////////////////////////////////////////////
+    // $.ec.modk.PointExplore
+
+    $.ec.modk.PointExplore = function() {
+        $.ec.modk.Base.call( this );
+
+        this.pxInput = $( "input[name='px']" );
+        this.pyInput = $( "input[name='py']" );
+        this.qxInput = $( "input[name='qx']" );
+        this.qyInput = $( "input[name='qy']" );
+        this.rxInput = $( "input[name='rx']" );
+        this.ryInput = $( "input[name='ry']" );
+
+        this.pxInput.data( "prev", this.pxInput.val() );
+        this.pyInput.data( "prev", this.pyInput.val() );
+        this.qxInput.data( "prev", this.qxInput.val() );
+        this.qyInput.data( "prev", this.qyInput.val() );
+
+        this.pLabel = this.makeLabel( "P", colors.yellow );
+        this.qLabel = this.makeLabel( "Q", colors.yellow );
+        this.rLabel = this.makeLabel( "R", colors.red );
+
+        var curve = this;
+        $().add( this.pxInput )
+           .add( this.pyInput )
+           .add( this.qxInput )
+           .add( this.qyInput )
+           .change(function() { curve.update(); });
+    };
+
+    $.ec.modk.PointExplore.prototype =
+        Object.create( $.ec.modk.Base.prototype );
+    $.ec.modk.PointExplore.prototype.constructor =
+        $.ec.modk.PointExplore;
+
+    $.ec.modk.PointExplore.prototype.getPlotData = function() {
+        var data = $.ec.modk.Base.prototype.getPlotData.call( this );
+        var linePoints = this.getLinePoints( this.p, this.q );
+
+        if( this.r !== null ) {
+            data.push({
+                color: colors.red,
+                data: [ this.r,
+                        [ this.r[ 0 ], this.k - this.r[ 1 ] ] ],
+                lines: { show: true }
+            });
+            data.push({
+                color: colors.red,
+                data: [ this.r ],
+                points: { show: true, radius: 5 },
+            });
+        }
+
+        data.push({
+            color: colors.yellow,
+            data: linePoints,
+            lines: { show: true }
+        });
+        data.push({
+            color: colors.yellow,
+            data: [ this.p, this.q ],
+            points: { show: true, radius: 5 }
+        });
+
+        return data;
+    };
+
+    $.ec.modk.PointExplore.prototype.getInputValues = function() {
+        $.ec.modk.Base.prototype.getInputValues.call( this );
+        this.p = this.fixPointCoordinate( this.pxInput, this.pyInput );
+        this.q = this.fixPointCoordinate( this.qxInput, this.qyInput );
+    };
+
+    $.ec.modk.PointExplore.prototype.recalculate = function() {
+        this.singular =
+            ( 4 * this.a * this.a * this.a + 27 * this.b * this.b ) % this.k === 0;
+        this.r = this.addPoints( this.p, this.q );
+        $.ec.modk.Base.prototype.recalculate.call( this );
+    };
+
+    $.ec.modk.PointExplore.prototype.redraw = function() {
+        $.ec.modk.Base.prototype.redraw.call( this );
+        this.setLabel( this.pLabel, this.p );
+        this.setLabel( this.qLabel, this.q );
+        this.setLabel( this.rLabel, this.r );
+    };
+
+    $.ec.modk.PointExplore.prototype.updateResults = function() {
+        $.ec.modk.Base.prototype.updateResults.call( this );
+
+        if( this.r !== null ) {
+            this.rxInput.val( round10( this.r[ 0 ] ) );
+            this.ryInput.val( round10( this.r[ 1 ] ) );
+        }
+        else {
+            this.rxInput.val( "Inf" );
+            this.ryInput.val( "Inf" );
+        }
     };
 
     ///////////////////////////////////////////////////////////////////////////
